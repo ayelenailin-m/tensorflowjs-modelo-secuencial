@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        Modelo Secuencial Simple con TensorFlow.js
+    </title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+</head>
+<body>
+    <h1>Modelo Secuencial Simple con TensorFlow.js</h1>
+    <p>Formula: y = 2x + 6</p>
+
+    <button onclick="entrenarModelo()">Entrenar al modelo</button><br>
+    <p id="resultado_entrenamiento"></p>
+    <input type="number" name="" id="inputX" placeholder="Ingrese el valor de X" />
+    <button onclick="predecirY()">Predecir Y</button>    
+    <p id="resultado"></p>
+
+
+    <script>
+        // primero declaramos el modelo de forma global
+        let modelo;
+        // función async porque el entrenamiento 'fit' es asincrono
+        async function entrenarModelo() {
+            modelo = tf.sequential(); // crear el modelo secuencial / modelo de una sola entrada y una salida
+            modelo.add(tf.layers.dense({units: 1, inputShape: [1]})); // units:1 una sola neurona, inputShape:[1] recibe un número como entrada
+
+
+            // le decimos cómo va a entrenar
+            modelo.compile({loss: 'meanSquaredError', optimizer: 'sgd'});  // loss:'meanSquaredError' compara lo que predice vs lo real. optimizer:'sgd' algoritmo para aprender
+
+            // datos para entrenar el modelo
+            const xs = tf.tensor2d([-6, -5, -4, -3, -2, -1, 0, 1, 2], [9, 1]);
+            const ys = tf.tensor2d([-6, -4, -2, 0, 2, 4, 6, 8, 10], [9, 1]); // son los resultados de la formula y = 2x + 6 para cada valor de x
+
+            // entrenar el modelo
+            await modelo.fit(xs, ys, {
+                epochs: 350, // la cantidad de veces que se entrena el modelo
+                callbacks: {
+                    onTrainEnd: () => {
+                        document.getElementById("resultado_entrenamiento").innerText = "El modelo fue entrenado y está listo para usarse"
+                    }
+                }
+            });
+        }
+
+        // función para predecir el valor de Y
+        async function predecirY() {
+            if (!modelo) {
+                document.getElementById("resultado").innerText = "Primero entrene el modelo";
+                return;
+            }
+
+            const valorX = parseFloat(document.getElementById("inputX").value);
+            if (isNaN(valorX)) {
+                document.getElementById("resultado").innerText = "Ingrese un número válido para X";
+                return;
+            }
+
+            const inputTensor = tf.tensor2d([valorX], [1, 1]); // convierte el numero en un tensor
+            const prediccion = modelo.predict(inputTensor); // pasa el tensor al modelo para predecir el valor de Y
+            
+            const valorY = (await prediccion.data())[0]; // obtiene el valor de Y de la predicción
+
+            // por último se muestra el resultado
+            document.getElementById("resultado").innerText = `El resultado de predecir para ${valorX} es: ${valorY}`;
+        }
+    </script>
+
+</body>
+</html>
